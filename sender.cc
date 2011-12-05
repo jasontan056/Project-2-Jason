@@ -65,7 +65,7 @@ int main( int argc, char *argv[] )
   // create a socket
   sockfd = socket( AF_INET, SOCK_DGRAM, 0 );
   if ( sockfd < 0 )
-    error( "ERROR opening socket" );
+    error( (char*) "ERROR opening socket" );
   bzero( (char*) &send_addr, sizeof( send_addr ) );
   portno = atoi( argv[ 1 ] );
   send_addr.sin_family = AF_INET; // IPv4
@@ -74,7 +74,7 @@ int main( int argc, char *argv[] )
 
   if ( bind( sockfd, (struct sockaddr*) &send_addr,
 	   sizeof(send_addr)) < 0) 
-    error( "ERROR on binding" );
+    error( (char*) "ERROR on binding" );
 
   printf( "sender waiting for file name...\n" );
 

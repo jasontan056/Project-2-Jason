@@ -48,7 +48,7 @@ int main( int argc, char *argv[] )
   // create a socket
   sockfd = socket( AF_INET, SOCK_DGRAM, 0 );
   if ( sockfd < 0 )
-    error( "ERROR opening socket" );
+    error( (char*) "ERROR opening socket" );
 
   //construct receiver's address
   bzero( (char*) &recv_addr, sizeof( recv_addr ) );
@@ -60,7 +60,7 @@ int main( int argc, char *argv[] )
   // bind the socket to the receiver's address
   if ( bind( sockfd, (struct sockaddr*) &recv_addr,
 	   sizeof(recv_addr)) < 0) 
-    error("ERROR on binding");
+    error( (char*)"ERROR on binding" );
 
   printf( "sending file name...\n" );
 
