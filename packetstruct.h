@@ -12,7 +12,7 @@ struct dataPacket {
 
 // contains dataPacket and checksum of the entire dataPacket
 struct packet {
-  word16 checksum;
+  unsigned short int checksum;
   struct dataPacket dPacket;
 };
 

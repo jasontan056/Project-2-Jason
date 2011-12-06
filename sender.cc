@@ -26,6 +26,32 @@ void error(char *msg)
   exit(1);
 }
 
+void sendPacketWithLossAndCorruption( double probLoss, double probCor, int sockfd,
+				      struct packet* p, struct sockaddr &their_addr ) {
+  bool corruptedPacket = false;
+  if ( ( (float) rand() )/RAND_MAX < probLoss ) {
+    printf( "Dropped Packet with Sequence Number %i\n", p->dPacket.seqNum );
+  } else {
+    if ( ( (float) rand() )/RAND_MAX < probCor ) {
+      // make the packet appear corrupted
+      p->checksum++;
+      corruptedPacket = true;
+      printf( "Corrupting Packet %i\n", p->dPacket.seqNum );
+    }
+    if ( sendto( sockfd, (char*) p, sizeof(*p), 0, &their_addr, sizeof( their_addr ) ) == -1 ) {
+      perror("sendto");
+      exit(1);
+    }
+    printf( "Sent Packet with Sequence Number %i\n", p->dPacket.seqNum );
+
+    if ( corruptedPacket ) {
+      // fix the packet we corrupted
+      p->checksum--;
+      corruptedPacket = false;
+    }
+  }
+}
+				      
 int main( int argc, char *argv[] )	  
 {
   int sockfd;
@@ -133,34 +159,15 @@ int main( int argc, char *argv[] )
       // set sequence number and checksum of packet
       p = &packetBuffer[ nextSeqNum ];
       p->dPacket.seqNum = nextSeqNum;
-      p->checksum = checksum( (byte*) &(p->dPacket), sizeof( p->dPacket ) );
+      p->checksum = checksum( (char*) &(p->dPacket), sizeof( p->dPacket ) );
 
-      if ( ( (float) rand() )/RAND_MAX < probCor ) {
-	// make the packet appear corrupted
-	p->checksum++;
-	corruptedPacket = true;
-	printf( "Corrupting Packet %i\n", p->dPacket.seqNum );
-      }
-      // send packet
-      if ( ( (float) rand() )/RAND_MAX < probLoss ) {
-	printf( "Dropped Packet with Sequence Number %i\n", p->dPacket.seqNum );
-      } else {
-	if ( sendto( sockfd, (char*) p, sizeof(*p), 0, &their_addr, sizeof( their_addr ) ) == -1 ) {
-	  perror("sendto");
-	  exit(1);
-	}
-	printf( "Sent Packet with Sequence Number %i\n", p->dPacket.seqNum );
-      }
+      // send the packet
+      sendPacketWithLossAndCorruption( probLoss, probCor, sockfd, p, their_addr );
+      
       if ( base == nextSeqNum ) {
 	timerRunning = true;	
 	gettimeofday( &oldTime, 0 );
       }
-      if ( corruptedPacket ) {
-	// fix the packet we corrupted
-	p->checksum--;
-	corruptedPacket = false;
-      }
-      
       nextSeqNum++;
     }
 
@@ -174,26 +181,8 @@ int main( int argc, char *argv[] )
       // retransmit packets
       for ( int i = base; i < nextSeqNum; i++ ) {
 	p = &packetBuffer[ i ];
-	if ( ( (float) rand() )/RAND_MAX < probCor ) {
-	  // make the packet appear corrupted
-	  p->checksum++;
-	  corruptedPacket = true;
-	  printf( "Corrupting Packet %i\n", p->dPacket.seqNum );
-	}
-	if ( ( (float) rand() )/RAND_MAX < probLoss ) {
-	  printf( "Dropped Packet with Sequence Number %i\n", p->dPacket.seqNum );
-	} else {
-	  if ( sendto( sockfd, (char*) p, sizeof(*p), 0, &their_addr, sizeof( their_addr ) ) == -1 ) {
-	    perror("sendto");
-	    exit(1);
-	  }
-	  printf( "Sent Packet with Sequence Number %i\n", p->dPacket.seqNum );
-	}
-	if ( corruptedPacket ) {
-	  // fix the packet we corrupted
-	  p->checksum--;
-	  corruptedPacket = false;
-	}
+	// send the packet
+	sendPacketWithLossAndCorruption( probLoss, probCor, sockfd, p, their_addr );
       }
     }
 
@@ -208,7 +197,7 @@ int main( int argc, char *argv[] )
 	exit( 1 );
       }
       p = (struct packet*) packetBuf;
-      if ( p->checksum == checksum( (byte*) &(p->dPacket), sizeof( p->dPacket) ) ) {
+      if ( p->checksum == checksum( (char*) &(p->dPacket), sizeof( p->dPacket) ) ) {
 	base = p->dPacket.ackNum + 1;
 	if ( base == nextSeqNum )
 	  timerRunning = false;

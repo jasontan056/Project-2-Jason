@@ -152,14 +152,6 @@ int main( int argc, char *argv[] )
 	printf( "Expected Packet with Sequence Number %i, but Received Packet %i\n",
 		expectedSeqNum, p->dPacket.seqNum );
       }
-
-      // send duplicate ack
-      if ( ( numbytes = sendto( sockfd, (char*) &ackPacket, sizeof(ackPacket), 0,
-				(struct sockaddr*) &send_addr, sizeof( send_addr ) ) ) == -1 ) {
-	perror("sendto");
-	exit(1);
-      }
-      printf( "Sent ACK %i\n", ackPacket.dPacket.ackNum);
     }
   }
   
